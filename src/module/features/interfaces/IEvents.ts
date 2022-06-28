@@ -10,4 +10,5 @@ export interface IEvents{
     connection: [connection: any];
     auth: [client: KlaruClient];
     close: [connection: any];
+    reconnection: [connection: any]
 }
