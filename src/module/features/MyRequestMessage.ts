@@ -4,10 +4,11 @@ import {IInfoMessage} from "./interfaces/IInfoMessage";
 import {IRequestMessage} from "./interfaces/IRequestMessage";
 import {IMessage} from "./interfaces/IMessage";
 import {IResponseMessage} from "./interfaces/IResponseMessage";
+import {KlaruServer} from "./KlaruServer";
 
 export class MyRequestMessage extends MyMessage{
     private readonly requestMessage: IRequestMessage;
-    constructor(sender: KlaruClient, message: IRequestMessage) {
+    constructor(sender: KlaruClient | KlaruServer, message: IRequestMessage) {
         super(sender, message as IInfoMessage);
         this.requestMessage = message;
     }

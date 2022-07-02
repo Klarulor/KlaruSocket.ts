@@ -159,7 +159,7 @@ export class KlaruSocketServer{
                 {
                     const requestMessage = new MyRequestMessage(client, req);
                     for(let i in this.commands[req.keyword])
-                        this.commands[req.keyword](requestMessage)[i];
+                        this.commands[req.keyword][i](requestMessage);
                 }else{
                     const resMessage: IResponseMessage = {content: "__null", sessionId: req.sessionId, responseCode: "TIMEOUT"};
                     const packet: IMessage = {content: JSON.stringify(resMessage), type: 4};
