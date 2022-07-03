@@ -25,7 +25,7 @@ export class KlaruClient extends KlaruInteractable{
 
     }
 
-    req(keyword: string, content: string, maxTTL?: number): Promise<MyResponseMessage> {
+    get(keyword: string, content: string, maxTTL: number = 3600): Promise<MyResponseMessage> {
         return new Promise<MyResponseMessage>(res => {
             const req: IRequestMessage = {content, sessionId: createUniqHash(), ttl: maxTTL, keyword};
             this.server.createRequest(this, req, res);

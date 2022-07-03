@@ -48,11 +48,12 @@ export class KlaruSocketServer{
         this.socket.on('request', (req: any) => this.onConnectionRequest(req));
 
     }
-    private clients: KlaruClient[];
+    private clients: KlaruClient[] = [];
     private eventHandlers: any = {};
     private commands: any = {};
     private outcomingRequests: any = {}; // Req from server
     public createRequest(client: KlaruClient, message: IRequestMessage, callback: ((message: MyResponseMessage) => any)): void{
+        console.log("TTTTTTTTTTTTTTTTTTT 1", message.ttl)
         const timer = setTimeout(() => {
             const resMessage: IResponseMessage = {content: "__null", sessionId: message.sessionId, responseCode: "TIMEOUT"};
             const lateMessage = new MyResponseMessage(client, resMessage, message);
@@ -110,7 +111,7 @@ export class KlaruSocketServer{
                             current = new KlaruClient(this, connection, createUniqHash(), prepStruct.tag);
                             current.authorized = true;
                             current.loginTime = Date.now();
-
+                            this.clients.push(current);
                             if(this.eventHandlers["auth"]?.length > 0)
                             {
                                 for(let k in this.eventHandlers["auth"])
@@ -119,7 +120,8 @@ export class KlaruSocketServer{
                         }
                     }
                 }
-            }catch {
+            }catch(exc) {
+                console.error(exc)
                 if(this.eventHandlers["close"]?.length > 0)
                 {
                     for(let k in this.eventHandlers["close"])
@@ -169,11 +171,12 @@ export class KlaruSocketServer{
                 const response = JSON.parse(message.content) as IResponseMessage;
                 let found = false;
                 for(let k in Object.keys(this.outcomingRequests))
-                    if(response.sessionId === k)
+                    if(response.sessionId === Object.keys(this.outcomingRequests)[k])
                         found = true;
+                console.log("Found: ", found, response.sessionId, Object.keys(this.outcomingRequests))
                 if(found){
                     const res = new MyResponseMessage(client, response, this.outcomingRequests[response.sessionId].request as IRequestMessage);
-                    this.outcomingRequests[response.sessionId].callback()
+                    this.outcomingRequests[response.sessionId].callback(res)
                     delete this.outcomingRequests[response.sessionId];
                 }
             }
@@ -185,10 +188,10 @@ export class KlaruSocketServer{
 
     }
     public get ip(): string{
-        return this.ip;
+        return this._ip;
     }
     public get port(): number{
-        return this.port;
+        return this._port;
     }
 
 }

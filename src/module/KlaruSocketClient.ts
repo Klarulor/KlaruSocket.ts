@@ -59,13 +59,17 @@ export class KlaruSocketClient{
             this.klaruServer.con = this.connection;
             //Auth
             const authPacket: IPreparingMessage = {connectionKey, tag: this.tag}
-            setTimeout(() => connection.sendUTF(JSON.stringify(authPacket)), 250);
+            setTimeout(() => {
+                connection.sendUTF(JSON.stringify({content: JSON.stringify(authPacket), type: 0} as IMessage))
+                console.log("auth")
+            }, 250);
 
             connection.on('close', () => {
                 this.state = "CLOSE"
+                console.log("Close")
             });
-            connection.on('message', (content: string) => {
-                const message = JSON.parse(content) as IMessage;
+            connection.on('message', (content: any) => {
+                const message = JSON.parse(content.utf8Data) as IMessage;
                 this.onMessage(message);
             });
 
@@ -74,6 +78,28 @@ export class KlaruSocketClient{
     }
     public sendPacket(message: IMessage): void{
         this.connection.sendUTF(JSON.stringify(message));
+    }
+    public get(keyword: string, content: any): Promise<MyResponseMessage>{
+        return new Promise<MyResponseMessage>(res => {
+            const message: IRequestMessage = {content: JSON.stringify(content), sessionId: createUniqHash(), ttl: 3600, keyword};
+            const timer = setTimeout(() => {
+                const resMessage: IResponseMessage = {content: "__null", sessionId: message.sessionId, responseCode: "TIMEOUT"};
+                const lateMessage = new MyResponseMessage(this.klaruServer, resMessage, message);
+                res(lateMessage);
+                delete this.outcomingRequests[message.sessionId];
+            }, 3600);
+            const privateCallback = (r: MyResponseMessage) => {
+                clearTimeout(timer);
+                res(r);
+            }
+            this.outcomingRequests[message.sessionId] = {
+                callback: privateCallback,
+                request: message
+            }
+            const cc = JSON.stringify(message);
+            const packet: IMessage = {content: cc, type: 3};
+            this.klaruServer.sendPacket(packet);
+        })
     }
     private onMessage(message: IMessage): void{
         if(message.type == 1) //connection
@@ -106,13 +132,15 @@ export class KlaruSocketClient{
                 const response = JSON.parse(message.content) as IResponseMessage;
                 let found = false;
                 for(let k in Object.keys(this.outcomingRequests))
-                    if(response.sessionId === k)
+                    if(response.sessionId == Object.keys(this.outcomingRequests)[k])
                         found = true;
+
                 if(found){
                     const res = new MyResponseMessage(this.klaruServer, response, this.outcomingRequests[response.sessionId].request as IRequestMessage);
-                    this.outcomingRequests[response.sessionId].callback()
+                    this.outcomingRequests[response.sessionId].callback(res)
                     delete this.outcomingRequests[response.sessionId];
                 }
+
             }
         }
     }
