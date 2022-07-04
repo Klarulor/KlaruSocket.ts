@@ -61,12 +61,12 @@ export class KlaruSocketClient{
             const authPacket: IPreparingMessage = {connectionKey, tag: this.tag}
             setTimeout(() => {
                 connection.sendUTF(JSON.stringify({content: JSON.stringify(authPacket), type: 0} as IMessage))
-                console.log("auth")
+                //console.log("auth")
             }, 250);
 
             connection.on('close', () => {
                 this.state = "CLOSE"
-                console.log("Close")
+                //console.log("Close")
             });
             connection.on('message', (content: any) => {
                 const message = JSON.parse(content.utf8Data) as IMessage;

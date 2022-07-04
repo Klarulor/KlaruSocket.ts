@@ -1,4 +1,4 @@
-import {KlaruSocketServer} from "../module/KlaruSocketServer";
+import {KlaruSocketServer} from "../src/module/KlaruSocketServer";
 
 const server: KlaruSocketServer = new KlaruSocketServer();
 server.listen(1111, "127.0.0.1", () => {

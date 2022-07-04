@@ -1,4 +1,4 @@
-import {KlaruSocketClient} from "../module/KlaruSocketClient";
+import {KlaruSocketClient} from "../src/module/KlaruSocketClient";
 
 const client: KlaruSocketClient = new KlaruSocketClient("da");
 client.connect(1111, "127.0.0.1");

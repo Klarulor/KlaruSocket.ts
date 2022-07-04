@@ -27,7 +27,7 @@ export class KlaruSocketServer{
         this.connectionKey = connectionKey;
 
         this.httpServer = http.createServer((request: any, response: { writeHead: (arg0: number) => void; end: () => void; }) => {
-            console.log((new Date()) + ' Received request for ' + request.url);
+            //console.log((new Date()) + ' Received request for ' + request.url);
             response.writeHead(404);
             response.end();
         });
@@ -53,7 +53,6 @@ export class KlaruSocketServer{
     private commands: any = {};
     private outcomingRequests: any = {}; // Req from server
     public createRequest(client: KlaruClient, message: IRequestMessage, callback: ((message: MyResponseMessage) => any)): void{
-        console.log("TTTTTTTTTTTTTTTTTTT 1", message.ttl)
         const timer = setTimeout(() => {
             const resMessage: IResponseMessage = {content: "__null", sessionId: message.sessionId, responseCode: "TIMEOUT"};
             const lateMessage = new MyResponseMessage(client, resMessage, message);
@@ -173,7 +172,7 @@ export class KlaruSocketServer{
                 for(let k in Object.keys(this.outcomingRequests))
                     if(response.sessionId === Object.keys(this.outcomingRequests)[k])
                         found = true;
-                console.log("Found: ", found, response.sessionId, Object.keys(this.outcomingRequests))
+                //console.log("Found: ", found, response.sessionId, Object.keys(this.outcomingRequests))
                 if(found){
                     const res = new MyResponseMessage(client, response, this.outcomingRequests[response.sessionId].request as IRequestMessage);
                     this.outcomingRequests[response.sessionId].callback(res)
