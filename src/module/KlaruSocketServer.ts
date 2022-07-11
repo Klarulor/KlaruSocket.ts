@@ -134,6 +134,11 @@ export class KlaruSocketServer{
         connection.on('close',  (reasonCode: any, description: any) => {
             if(current){
                 console.debug(current.uid)
+                if(this.eventHandlers["close"]?.length > 0)
+                {
+                    for(let k in this.eventHandlers["close"])
+                        this.eventHandlers["close"][k](current);
+                }
                 delete this.clients[this.clients.indexOf(current)];
             }
         });

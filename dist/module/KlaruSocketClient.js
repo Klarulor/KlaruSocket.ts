@@ -33,17 +33,29 @@ class KlaruSocketClient {
     connect(port, ip = "127.0.0.1", connectionKey) {
         this.client.connect(`ws://${ip}:${port}`);
         this.client.on('connect', (connection) => {
+            var _a;
             this.connection = connection;
             this.connectionTime = Date.now();
             this.state = "PREPARING";
             this.klaruServer = new KlaruServer_1.KlaruServer();
             this.klaruServer.con = this.connection;
+            if (((_a = this.eventHandlers["connection"]) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+                for (let k in this.eventHandlers["connection"])
+                    this.eventHandlers["connection"][k](connection);
+            }
             //Auth
             const authPacket = { connectionKey, tag: this.tag };
             setTimeout(() => {
                 connection.sendUTF(JSON.stringify({ content: JSON.stringify(authPacket), type: 0 }));
                 //console.log("auth")
             }, 250);
+            setTimeout(() => {
+                var _a;
+                if (this.state != "CLOSE" && ((_a = this.eventHandlers["auth"]) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+                    for (let k in this.eventHandlers["auth"])
+                        this.eventHandlers["auth"][k]();
+                }
+            }, 500);
             connection.on('close', () => {
                 this.state = "CLOSE";
                 //console.log("Close")
