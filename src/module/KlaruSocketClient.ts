@@ -57,13 +57,24 @@ export class KlaruSocketClient{
             this.state = "PREPARING";
             this.klaruServer = new KlaruServer();
             this.klaruServer.con = this.connection;
+            if(this.eventHandlers["connection"]?.length > 0)
+            {
+                for(let k in this.eventHandlers["connection"])
+                    this.eventHandlers["connection"][k](connection);
+            }
             //Auth
             const authPacket: IPreparingMessage = {connectionKey, tag: this.tag}
             setTimeout(() => {
                 connection.sendUTF(JSON.stringify({content: JSON.stringify(authPacket), type: 0} as IMessage))
                 //console.log("auth")
             }, 250);
-
+            setTimeout(() => {
+                if(this.state != "CLOSE" && this.eventHandlers["auth"]?.length > 0)
+                {
+                    for(let k in this.eventHandlers["auth"])
+                        this.eventHandlers["auth"][k]();
+                }
+            }, 500)
             connection.on('close', () => {
                 this.state = "CLOSE"
                 //console.log("Close")
