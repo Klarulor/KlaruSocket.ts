@@ -1,5 +1,3 @@
-import {KlaruServer} from "./module/features/KlaruServer";
-
 export * from './module/KlaruSocketClient';
 export * from './module/KlaruSocketServer';
 export * from './module/features/KlaruInteractable';
@@ -18,5 +16,3 @@ export * from './module/features/interfaces/IInfoMessage';
 export * from './module/features/interfaces/IMessage';
 export * from './module/features/interfaces/IPreparingMessage';
 export * from './module/features/interfaces/IResponseMessage';
-
-

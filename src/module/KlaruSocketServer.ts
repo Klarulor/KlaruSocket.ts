@@ -27,7 +27,7 @@ export class KlaruSocketServer{
         this.connectionKey = connectionKey;
 
         this.httpServer = http.createServer((request: any, response: { writeHead: (arg0: number) => void; end: () => void; }) => {
-            console.log((new Date()) + ' Received request for ' + request.url);
+            //console.log((new Date()) + ' Received request for ' + request.url);
             response.writeHead(404);
             response.end();
         });
@@ -48,7 +48,7 @@ export class KlaruSocketServer{
         this.socket.on('request', (req: any) => this.onConnectionRequest(req));
 
     }
-    private clients: KlaruClient[];
+    private clients: KlaruClient[] = [];
     private eventHandlers: any = {};
     private commands: any = {};
     private outcomingRequests: any = {}; // Req from server
@@ -110,7 +110,7 @@ export class KlaruSocketServer{
                             current = new KlaruClient(this, connection, createUniqHash(), prepStruct.tag);
                             current.authorized = true;
                             current.loginTime = Date.now();
-
+                            this.clients.push(current);
                             if(this.eventHandlers["auth"]?.length > 0)
                             {
                                 for(let k in this.eventHandlers["auth"])
@@ -119,7 +119,8 @@ export class KlaruSocketServer{
                         }
                     }
                 }
-            }catch {
+            }catch(exc) {
+                console.error(exc)
                 if(this.eventHandlers["close"]?.length > 0)
                 {
                     for(let k in this.eventHandlers["close"])
@@ -133,6 +134,11 @@ export class KlaruSocketServer{
         connection.on('close',  (reasonCode: any, description: any) => {
             if(current){
                 console.debug(current.uid)
+                if(this.eventHandlers["close"]?.length > 0)
+                {
+                    for(let k in this.eventHandlers["close"])
+                        this.eventHandlers["close"][k](current);
+                }
                 delete this.clients[this.clients.indexOf(current)];
             }
         });
@@ -159,7 +165,7 @@ export class KlaruSocketServer{
                 {
                     const requestMessage = new MyRequestMessage(client, req);
                     for(let i in this.commands[req.keyword])
-                        this.commands[req.keyword](requestMessage)[i];
+                        this.commands[req.keyword][i](requestMessage);
                 }else{
                     const resMessage: IResponseMessage = {content: "__null", sessionId: req.sessionId, responseCode: "TIMEOUT"};
                     const packet: IMessage = {content: JSON.stringify(resMessage), type: 4};
@@ -169,11 +175,12 @@ export class KlaruSocketServer{
                 const response = JSON.parse(message.content) as IResponseMessage;
                 let found = false;
                 for(let k in Object.keys(this.outcomingRequests))
-                    if(response.sessionId === k)
+                    if(response.sessionId === Object.keys(this.outcomingRequests)[k])
                         found = true;
+                //console.log("Found: ", found, response.sessionId, Object.keys(this.outcomingRequests))
                 if(found){
                     const res = new MyResponseMessage(client, response, this.outcomingRequests[response.sessionId].request as IRequestMessage);
-                    this.outcomingRequests[response.sessionId].callback()
+                    this.outcomingRequests[response.sessionId].callback(res)
                     delete this.outcomingRequests[response.sessionId];
                 }
             }
@@ -185,10 +192,10 @@ export class KlaruSocketServer{
 
     }
     public get ip(): string{
-        return this.ip;
+        return this._ip;
     }
     public get port(): number{
-        return this.port;
+        return this._port;
     }
 
 }

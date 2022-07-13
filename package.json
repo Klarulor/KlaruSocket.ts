@@ -1,6 +1,6 @@
 {
   "name": "klarusocket",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,12 +8,12 @@
     "/dist"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build" : "tsc"
   },
   "devDependencies": {
     "@types/node": "^18.0.0"
   },
-  "author": "",
+  "author": "klarulor",
   "license": "MIT",
   "dependencies": {
     "crypto": "^1.0.1",
