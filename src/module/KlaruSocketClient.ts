@@ -20,9 +20,6 @@ import {KlaruServer} from "./features/KlaruServer";
 export class KlaruSocketClient{
     public readonly connectionKey?: string;
     public readonly tag: string = "__null";
-    private readonly httpServer: any;
-    private _port: number;
-    private _ip: string;
     private connection: any;
     private readonly client = new WebSocketClient();
     private connectionTime: number;
