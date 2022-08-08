@@ -1,6 +1,6 @@
 import {StateType} from "./features/Types";
 
-let WebSocketClient = require('websocket').client;
+let WebSocketClient = require('websocket').w3cwebsocket;
 import {createHash} from 'crypto';
 import {IPreparingMessage} from "./features/interfaces/IPreparingMessage";
 import {createUniqHash} from "./features/functions";
@@ -20,7 +20,7 @@ export class KlaruSocketClient{
     public readonly connectionKey?: string;
     public readonly tag: string = "__null";
     private connection: any;
-    private readonly client = new WebSocketClient();
+    private client: any;
     private connectionTime: number;
     private klaruServer: KlaruServer;
     private state: StateType;
@@ -46,7 +46,9 @@ export class KlaruSocketClient{
         this.commands[key].push(callback);
     }
     public connect(port: number, ip: string = "127.0.0.1", connectionKey?: string): void{
-        this.client.connect(`ws://${ip}:${port}`);
+        const string = `ws://${ip}:${port}`;
+        this.client = new WebSocketClient(string);
+        //this.client.connect(`ws://${ip}:${port}`);
         this.client.on('connect', (connection: any) => {
             this.connection = connection;
             this.connectionTime = Date.now();
