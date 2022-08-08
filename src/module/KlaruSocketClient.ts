@@ -48,8 +48,8 @@ export class KlaruSocketClient{
     public connect(port: number, ip: string = "127.0.0.1", connectionKey?: string): void{
         const string = `ws://${ip}:${port}`;
         this.client = new WebSocketClient(string);
-        //this.client.connect(`ws://${ip}:${port}`);
-        this.client.on('connect', (connection: any) => {
+        this.client.connect(`ws://${ip}:${port}`);
+        this.client.onopen = (connection: any) => {
             this.connection = connection;
             this.connectionTime = Date.now();
             this.state = "PREPARING";
@@ -73,17 +73,17 @@ export class KlaruSocketClient{
                         this.eventHandlers["auth"][k]();
                 }
             }, 500)
-            connection.on('close', () => {
+            connection.onclose = () => {
                 this.state = "CLOSE"
                 //console.log("Close")
-            });
-            connection.on('message', (content: any) => {
+            };
+            connection.onmessage = (content: any) => {
                 const message = JSON.parse(content.utf8Data) as IMessage;
                 this.onMessage(message);
-            });
+            };
 
 
-        });
+        };
     }
     public sendPacket(message: IMessage): void{
         this.connection.sendUTF(JSON.stringify(message));
