@@ -5,9 +5,6 @@ import { MyResponseMessage } from "./features/MyResponseMessage";
 export declare class KlaruSocketClient {
     readonly connectionKey?: string;
     readonly tag: string;
-    private readonly httpServer;
-    private _port;
-    private _ip;
     private connection;
     private readonly client;
     private connectionTime;

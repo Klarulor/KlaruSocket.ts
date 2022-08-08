@@ -1,6 +1,7 @@
 import { ISystemMessage } from "./ISystemMessage";
 import { KlaruClient } from "../KlaruClient";
 import { MyMessage } from "../MyMessage";
+import { KlaruServer } from "../KlaruServer";
 export interface IEvents {
     req: [];
     res: [];
@@ -8,6 +9,6 @@ export interface IEvents {
     sys: [message: ISystemMessage];
     connection: [connection: any];
     auth: [client: KlaruClient];
-    close: [connection: any];
+    close: [destination: (KlaruClient | KlaruServer)];
     reconnection: [connection: any];
 }

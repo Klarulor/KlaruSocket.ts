@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KlaruSocketClient = void 0;
 let WebSocketClient = require('websocket').client;
-const http = require('http');
 const functions_1 = require("./features/functions");
 const MyMessage_1 = require("./features/MyMessage");
 const MyRequestMessage_1 = require("./features/MyRequestMessage");
