@@ -1,7 +1,6 @@
 import {StateType} from "./features/Types";
 
 let WebSocketClient = require('websocket').client;
-const http = require('http');
 import {createHash} from 'crypto';
 import {IPreparingMessage} from "./features/interfaces/IPreparingMessage";
 import {createUniqHash} from "./features/functions";
