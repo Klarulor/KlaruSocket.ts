@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KlaruSocketClient = void 0;
-let WebSocketClient = require('websocket').client;
+let WebSocketClient = require('websocket').w3cwebsocket;
 const functions_1 = require("./features/functions");
 const MyMessage_1 = require("./features/MyMessage");
 const MyRequestMessage_1 = require("./features/MyRequestMessage");
@@ -10,7 +10,6 @@ const KlaruServer_1 = require("./features/KlaruServer");
 class KlaruSocketClient {
     constructor(clientTag) {
         this.tag = "__null";
-        this.client = new WebSocketClient();
         this.eventHandlers = {};
         this.commands = {};
         this.outcomingRequests = {}; // Req from serve
@@ -30,7 +29,9 @@ class KlaruSocketClient {
         this.commands[key].push(callback);
     }
     connect(port, ip = "127.0.0.1", connectionKey) {
-        this.client.connect(`ws://${ip}:${port}`);
+        const string = `ws://${ip}:${port}`;
+        this.client = new WebSocketClient(string);
+        //this.client.connect(`ws://${ip}:${port}`);
         this.client.on('connect', (connection) => {
             var _a;
             this.connection = connection;

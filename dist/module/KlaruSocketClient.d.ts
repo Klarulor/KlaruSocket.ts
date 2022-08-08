@@ -6,7 +6,7 @@ export declare class KlaruSocketClient {
     readonly connectionKey?: string;
     readonly tag: string;
     private connection;
-    private readonly client;
+    private client;
     private connectionTime;
     private klaruServer;
     private state;
