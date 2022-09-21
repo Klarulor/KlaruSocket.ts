@@ -1,0 +1,3 @@
+node_modules
+.ide
+package-lock.json

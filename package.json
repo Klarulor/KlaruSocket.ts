@@ -1,0 +1,30 @@
+{
+  "name": "klarusocket",
+  "version": "2.0.0",
+  "description": "Socket to communicate with a response to a specific request",
+  "main": "src/index.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Klarulor/KlaruSocket.ts.git"
+  },
+  "keywords": [
+    "socket"
+  ],
+  "author": "klarulor",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Klarulor/KlaruSocket.ts/issues"
+  },
+  "homepage": "https://github.com/Klarulor/KlaruSocket.ts#readme",
+  "dependencies": {
+    "@types/node": "^18.7.18",
+    "http": "^0.0.1-security",
+    "websocket": "^1.0.34"
+  }
+}
