@@ -1,3 +1,5 @@
+import {WebSocketConnection} from "./features/Types";
+
 const WebSocketClient = require('websocket').client;
 
 export class KlaruSocketClient{
@@ -8,6 +10,9 @@ export class KlaruSocketClient{
     private _hostPort: number;
 
     private readonly _connector = new WebSocketClient();
+    private  _connection: WebSocketConnection;
+
+    public get connection(){return this._connection}
 
     constructor(clientTag: string){
         this._clientTag = clientTag;
@@ -17,10 +22,11 @@ export class KlaruSocketClient{
         this._hostIP = ip;
         this._hostPort = port;
 
-        this._connector.connect(`ws://${ip}:${port}`, undefined, undefined, {
+        this._connector.connect(`ws://${ip}:${port}`, undefined, {
             "connectionKey": connectionKey
         });
         this._connector.on('connect', (connection: any) => {
+            this._connection = connection;
             if(callback) 
                 callback();
         });
