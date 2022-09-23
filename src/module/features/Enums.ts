@@ -15,7 +15,12 @@ export enum SocketCommunicationFlags{
 export enum SocketProviderDeliveryFlags{
     CNT = 1 << 0,  // 1  Packet has a content
     SID = 1 << 1,  // 2  Packet has a sid
-    CIB = 1 << 2,  // 4  Content is string
+}
+
+export enum SocketProviderDeliveryContentEncodingFlags{
+    ISB = 1 << 0,  // 1  Is buffer
+    OBY = 1 << 1, // 2  Encoding by 1 byte with <>.chatCodeAt()
+    TBY = 1 << 2, // 4  Encoding by 2 byte with <>.chatCodeAt()
 }
 
 export enum SocketResponseError{

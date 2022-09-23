@@ -1,5 +1,11 @@
 import {ITagConnectionMessageStructure} from "./Communication/MessageStructures/ITagConnectionMessageStructure";
-import {SocketCommunicationFlags, SocketCommunicationMessageType, SocketProviderDeliveryFlags} from "./Enums";
+import {
+    SocketCommunicationFlags,
+    SocketCommunicationMessageType,
+    SocketProviderDeliveryContentEncodingFlags,
+    SocketProviderDeliveryFlags
+} from "./Enums";
+import * as buffer from "buffer";
 
 const chars = "qwertyuiopasdfghjklzxcvbnm";
 const numbers = "1234567890";
@@ -44,15 +50,33 @@ export const cutSid = (sid: number) => sid & (2**SID_SIZE)-1;
 
 
 
-export function convertToBytes(messageType: SocketCommunicationMessageType, flags: number, messageContent?: string | Buffer, sid?: number): void{
+export function convertToBytes(messageType: SocketCommunicationMessageType, flags: number, cargo?: (IConvertToBytesContentOptions | string | Buffer), sid?: number): Buffer{
+    let deliveryCargo: IConvertToBytesContentOptions = null;
+    if(cargo){
+        if(!(cargo as IConvertToBytesContentOptions).content){
+            if(typeof(cargo) === "string"){
+                deliveryCargo = {
+                    content: cargo as string,
+                    flags: [4]
+                }
+            }else{
+                deliveryCargo = {
+                    content: cargo as Buffer,
+                    flags: [1]
+                }
+            }
+        }else
+            deliveryCargo = cargo as IConvertToBytesContentOptions;
+    }else deliveryCargo =  {content: null, flags: []};
+
     const buffer: number[] = [];
     let offset = 0;
     buffer[offset++] = messageType;
     buffer[offset++] = byte(flags);
     buffer[offset++] =
-        ((messageContent != null && messageType != undefined && messageType != NaN) ? 1 : 0) +
-        (typeof(sid) == "string" ? 2 : 0) +
-        (typeof(messageContent) == "string" ? 4 : 0)
+        ((deliveryCargo.content && messageType != NaN) ? 1 : 0) +
+        (typeof(sid) == "number" ? 2 : 0) +
+        (typeof(deliveryCargo.content) == "string" ? 4 : 0)
 
     if(sid){ // sid length by default is 8 bytes
         const octaves = sliceNumberToOctaves(sid);
@@ -60,19 +84,22 @@ export function convertToBytes(messageType: SocketCommunicationMessageType, flag
             buffer[offset++] = octaves[i];
         }
     }
-    if(messageContent){
-        if(typeof(messageContent) == "string"){
-            for (let i = 0; i < messageContent.length; i++) {
-                const nums = encodeChar(messageContent.charAt(i));
+    if(deliveryCargo.content){
+        buffer[offset++] = bitEnumToNum(deliveryCargo.flags)
+
+        if(typeof(deliveryCargo.content) == "string"){
+            for (let i = 0; i < deliveryCargo.content.length; i++) {
+                const nums = encodeChar(deliveryCargo.content.charAt(i));
                 for(let ii = 0; ii < nums.length; ii++){
                     buffer[offset++] = nums[ii];
                 }
             }
         }else{
-            for(let i = 0; i < messageContent.length; i++)
-                buffer[offset + i] = messageContent[i];
+            for(let i = 0; i < deliveryCargo.content.length; i++)
+                buffer[offset + i] = deliveryCargo.content[i];
         }
     }
+    return Buffer.alloc(buffer.length, Buffer.from(new Uint8Array(buffer)));
 }
 
 export function encodeChar(char: string, size: number = 2): number[]{
@@ -97,13 +124,18 @@ export function convertIncomeBuffer(buffer: Buffer): IIncomeMessageStructure{
     }
     if(struct.packFlags.includes(SocketProviderDeliveryFlags.SID))
     {
-        struct.sid = !!!!!!!!!!!!!!!!!!!!!!!!!!!!sliceNumberToOctaves
+        const bytes: number[] = [];
+        for(let i = 0; i < SID_SIZE; i++){
+            bytes[i] = buffer[3+i];
+        }
+        struct.sid = concatOctavesToNumber(bytes);
     }
     if(struct.packFlags.includes(SocketProviderDeliveryFlags.CNT)){
-        const offset: number =  3 + (struct.packFlags.includes(SocketProviderDeliveryFlags.SID) ? 8 : 0);
+        const offset: number =  3 + (struct.packFlags.includes(SocketProviderDeliveryFlags.SID) ? SID_SIZE : 0);
         struct.content = "";
-        for(let i = offset; i < buffer.length; i++){
-            struct.content += String.fromCharCode(offset);
+        for(let i = offset; i < buffer.length; i+=2){
+            const pos = buffer[i] + ((255 * buffer[i+1]) | 0);
+            struct.content += String.fromCharCode(pos);
         }
     }
 
@@ -112,15 +144,24 @@ export function convertIncomeBuffer(buffer: Buffer): IIncomeMessageStructure{
 }
 
 export function numToBitEnum(num: number): number[]{
-    const bits: number[] = [];
-    const booleans: boolean[] = unshiftBits(num);
-    for(let i = 0; i < booleans.length; i++){
-        if(booleans[i]){
-            bits.push(2**(i+1)-1);
+    const unshifted: boolean[] = unshiftBits(num);
+    const nums: number[] = [];
+    for(let i = 0, k = 0; i < unshifted.length; i++){
+        if(unshifted[i]){
+            nums[k++] = 2**i;
         }
     }
-    return bits;
+    return nums;
 }
+
+export function bitEnumToNum(en: number[]): number{
+    let num: number = 0;
+    for(let i = 0; i < en.length; i++){
+        num += en[i];
+    }
+    return num;
+}
+
 
 export function unshiftBits(num: number): boolean[]{
     const bits: boolean[] = [];
@@ -130,10 +171,12 @@ export function unshiftBits(num: number): boolean[]{
         bits[t] = bit > 0;
         t++
     }
-    return bits.reverse();
+    return bits;
 }
-export function shiftBits(bits: boolean[]): number{ // [true, false]
-    bits = bits.reverse();
+
+
+export function shiftBits(bits: boolean[]): number{ // [true, false] -> 1
+    bits = bits;
     let res = 0;
     for(let i = 0; i < bits.length; i++){
         if(bits[i]){
@@ -157,26 +200,41 @@ export function shiftBits(bits: boolean[]): number{ // [true, false]
 
 export function sliceNumberToOctaves(num: number): number[]{
     const octaves: number[] = [];
-    const zeroArray = [];
     const unshifted = unshiftBits(num);
+    const zeroArray: boolean[] = [];
     for(let i = 0; i < (8*SID_SIZE)-unshifted.length; i++){
         zeroArray[i] = false;
     }
-    let shifted = zeroArray.concat(unshifted);
-    console.log(unshifted)
-    const size = SID_SIZE;
-    for(let i = 0; i < size; i++){
-        const sliced = shifted.slice(((i*8) | 0), Math.min(((i*8) | 0)+8, shifted.length -1));
-        octaves[i] = shiftBits(sliced);
+    let shifted = unshifted.concat(zeroArray);
+    for(let i = 0; i < SID_SIZE; i++){
+        const slicedBits: boolean[] = shifted.slice(((i*8) | 0), ((i*8) | 0) + 8);
+        octaves[i] = shiftBits(slicedBits);
     }
     return octaves;
 }
 
+export function concatOctavesToNumber(nums: number[]): number{
+    const bits: boolean[] = [];
+    for(let i = 0; i < SID_SIZE; i++){
+        const unshifted = unshiftBits(nums[i]);
+        for(let ii = 0; ii < 8; ii++){
+            bits[((i*8) | 0) + ii] = ii >= unshifted.length ? false : unshifted[ii];
+        }
+    }
+    return shiftBits(bits);
+}
 
-export interface IIncomeMessageStructure{
+
+interface IIncomeMessageStructure{
     type: SocketCommunicationMessageType;
     sysFlags: SocketCommunicationFlags[];
     packFlags: SocketProviderDeliveryFlags[];
     content?: string | Buffer;
     sid?: number;
+    contentEncoding?: number;
+}
+
+interface IConvertToBytesContentOptions{
+    content: string | Buffer;
+    flags: SocketProviderDeliveryContentEncodingFlags[];
 }

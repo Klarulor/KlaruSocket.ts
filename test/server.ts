@@ -5,8 +5,21 @@
 // server.listen(7001, "127.0.0.1", () => console.log("listening"))
 
 
-import {numToBitEnum, shiftBits, sliceNumberToOctaves} from "../src/module/features/functions";
-import {SocketCommunicationFlags} from "../src/module/features/Enums";
+import {convertIncomeBuffer, convertToBytes} from "../src/module/features/functions";
+import {SocketCommunicationFlags, SocketCommunicationMessageType} from "../src/module/features/Enums";
+
+/*
+const num = 2048;
+const sliced = sliceNumberToOctaves(num);
+const unsliced = concatOctavesToNumber(sliced);
+console.log(sliced, unsliced)
+*/
 
 
-console.log(sliceNumberToOctaves(429496737))
+//console.log(unshiftBits(19))
+
+
+const res = convertToBytes(SocketCommunicationMessageType.SYS, 5, "Hello, fucking ass", 228);
+console.log(res)
+const undec = convertIncomeBuffer(res);
+console.log(undec)
