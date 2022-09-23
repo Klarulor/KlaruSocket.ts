@@ -23,3 +23,6 @@ const res = convertToBytes(SocketCommunicationMessageType.SYS, 5, "Hello, fuckin
 console.log(res)
 const undec = convertIncomeBuffer(res);
 console.log(undec)
+
+
+console.log(0b10)

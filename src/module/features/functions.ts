@@ -131,10 +131,12 @@ export function convertIncomeBuffer(buffer: Buffer): IIncomeMessageStructure{
         struct.sid = concatOctavesToNumber(bytes);
     }
     if(struct.packFlags.includes(SocketProviderDeliveryFlags.CNT)){
-        const offset: number =  3 + (struct.packFlags.includes(SocketProviderDeliveryFlags.SID) ? SID_SIZE : 0);
+        let offset: number =  3 + (struct.packFlags.includes(SocketProviderDeliveryFlags.SID) ? SID_SIZE : 0);
         struct.content = "";
+        struct.contentEncoding = buffer[offset++];
         for(let i = offset; i < buffer.length; i+=2){
             const pos = buffer[i] + ((255 * buffer[i+1]) | 0);
+            console.log(buffer[i])
             struct.content += String.fromCharCode(pos);
         }
     }
