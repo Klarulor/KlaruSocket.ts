@@ -1,10 +1,18 @@
 import { SocketSlave } from "./features/SocketSlave";
 import { WebSocketConnection } from "./features/Types";
-import {concatConnectionTag, convertArrayToObject} from "./features/functions";
+import {
+    concatConnectionTag,
+    convertArrayToObject,
+    convertToBytes, createString,
+    IConvertToBytesContentOptions
+} from "./features/functions";
 import {
     ITagConnectionMessageStructure
 } from "./features/Communication/MessageStructures/ITagConnectionMessageStructure";
 import {endianness} from "os";
+import {SocketCommunicationMessageType} from "./features/Enums";
+import {NetworkPacketManager} from "./features/NetworkPacketManager";
+import {IKlaruSocket} from "./features/interfaces/IKlaruSocket";
 const WebSocketServer = require('websocket').server;
 const http = require('http');
 
@@ -25,7 +33,7 @@ const http = require('http');
 
 // request.accept();
 
-export class KlaruSocketServer{
+export class KlaruSocketServer implements IKlaruSocket{
     private readonly _serverTag?: string;
 
     private _hostIP: string;
@@ -39,6 +47,7 @@ export class KlaruSocketServer{
 
     private readonly _connections: {[id: string]: SocketSlave} = {};
 
+    public readonly network: NetworkPacketManager = new NetworkPacketManager(this);
 
     constructor(serverTag?: string){
         this._serverTag = serverTag;
@@ -134,7 +143,7 @@ export class KlaruSocketServer{
         connection.on(`message`, (message: any) => this.onMessage(connection, tag, message));
     }
     private createConnection(connection: WebSocketConnection, tag: ITagConnectionMessageStructure): void{
-        const slave = new SocketSlave(connection, tag);
+        const slave = new SocketSlave(this, connection, tag);
         this._connections[concatConnectionTag(tag)] = slave;
     }
     private replaceConnection(connection: WebSocketConnection, client: SocketSlave): void{
@@ -144,8 +153,24 @@ export class KlaruSocketServer{
 
     private onMessage(connection: WebSocketConnection, tag: ITagConnectionMessageStructure, struct: any): void{
         if(struct.type === "binary"){
-            const buffer = struct.buffer;
+            console.log(`Produce new packet: ${struct.buffer}`);
+            const sender = this._connections[concatConnectionTag(tag)];
+            this.network.receivePacket(sender, struct.buffer);
         }
+    }
+
+    /*public sendPacket(slave: SocketSlave, opts: IKlaruSocketServerSendPacketOptions): void{
+        const bytes = convertToBytes(opts.messageType, opts.flags, opts.cargo, opts.flags);
+        const buffer = Buffer.alloc(bytes.length, Buffer.from(new Uint8Array(bytes)));
+
+        slave.sendBuffer(buffer);
+
+    }*/
+
+    public readonly uid = createString(32);
+
+    sendBuffer(target: SocketSlave | null, buffer: Buffer): void {
+        target.sendBuffer(buffer);
     }
 }
 
@@ -158,4 +183,10 @@ export interface IKlaruSocketServerListenOptions{
 
 export interface IKlaruSocketServerListenMergeOptions{
     ack: boolean
+}
+
+export interface IKlaruSocketServerSendPacketOptions{
+    messageType: SocketCommunicationMessageType;
+    flags: number;
+    cargo?: (IConvertToBytesContentOptions | string | Buffer | null), sid?: number;
 }

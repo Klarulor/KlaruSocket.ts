@@ -1,9 +1,9 @@
 import {ITagConnectionMessageStructure} from "./Communication/MessageStructures/ITagConnectionMessageStructure";
 import {
-    SocketCommunicationFlags,
+    SocketDeliveryFlags,
     SocketCommunicationMessageType,
     SocketProviderDeliveryContentEncodingFlags,
-    SocketProviderDeliveryFlags
+    SocketProviderPacketFlags
 } from "./Enums";
 import * as buffer from "buffer";
 
@@ -16,7 +16,7 @@ const characters = chars + numbers; //36
 
 
 const SID_SIZE: number = 4;
-
+const SYNSID_SIZE: number = 2;
 
 
 
@@ -40,7 +40,8 @@ export function convertArrayToObject(array: any[]): any{
 
 export const concatConnectionTag = (struct: ITagConnectionMessageStructure) => `${struct.tag}-${struct.hash}`;
 export const randomAt = (min: number, max: number) => Math.round((Math.random() * (max - min)) + min);
-export const createSid = () => Math.round(Math.random() * (255**SID_SIZE))
+export const createSid = () => Math.round(Math.random() * (255**SID_SIZE));
+export const createSYNSid = () => Math.round(Math.random() * (255**SYNSID_SIZE));
 export const byte = (num: number) => num & 255;
 export const cut = (str: string, maxLength: number) => str.slice(0, Math.min(str.length, maxLength)-1);
 export const cutSid = (sid: number) => sid & (2**SID_SIZE)-1;
@@ -50,7 +51,7 @@ export const cutSid = (sid: number) => sid & (2**SID_SIZE)-1;
 
 
 
-export function convertToBytes(messageType: SocketCommunicationMessageType, flags: number, cargo?: (IConvertToBytesContentOptions | string | Buffer), sid?: number): Buffer{
+export function convertToBytes(messageType: SocketCommunicationMessageType, flags: number, cargo?: (IConvertToBytesContentOptions | string | Buffer), opts?: {sid?: number, synSid?:number}): number[]{
     let deliveryCargo: IConvertToBytesContentOptions = null;
     if(cargo){
         if(!(cargo as IConvertToBytesContentOptions).content){
@@ -69,20 +70,29 @@ export function convertToBytes(messageType: SocketCommunicationMessageType, flag
             deliveryCargo = cargo as IConvertToBytesContentOptions;
     }else deliveryCargo =  {content: null, flags: []};
 
+    opts = opts ?? {};
+
     const buffer: number[] = [];
     let offset = 0;
     buffer[offset++] = messageType;
     buffer[offset++] = byte(flags);
+    if(flags & SocketDeliveryFlags.SYN)
     buffer[offset++] =
         ((deliveryCargo.content && messageType != NaN) ? 1 : 0) +
-        (typeof(sid) == "number" ? 2 : 0) +
+        (typeof(opts.sid) == "number" ? 2 : 0) +
         (typeof(deliveryCargo.content) == "string" ? 4 : 0)
 
-    if(sid){ // sid length by default is 8 bytes
-        const octaves = sliceNumberToOctaves(sid);
+    if(opts.sid){ // sid length by default is ${SID_SIZE} bytes
+        const octaves = sliceNumberToOctaves(opts.sid);
         for(let i = 0; i < SID_SIZE; i++){
             buffer[offset++] = octaves[i];
         }
+    }
+    if(opts.synSid && flags & SocketDeliveryFlags.SYN)
+    {
+        const octaves = sliceNumberToOctaves(opts.synSid, SYNSID_SIZE);
+        buffer[offset++] = octaves[0];
+        buffer[offset++] = octaves[1];
     }
     if(deliveryCargo.content){
         buffer[offset++] = bitEnumToNum(deliveryCargo.flags)
@@ -99,7 +109,7 @@ export function convertToBytes(messageType: SocketCommunicationMessageType, flag
                 buffer[offset + i] = deliveryCargo.content[i];
         }
     }
-    return Buffer.alloc(buffer.length, Buffer.from(new Uint8Array(buffer)));
+    return buffer;
 }
 
 export function encodeChar(char: string, size: number = 2): number[]{
@@ -120,18 +130,26 @@ export function convertIncomeBuffer(buffer: Buffer): IIncomeMessageStructure{
         sysFlags: numToBitEnum(buffer[1]),
         packFlags: numToBitEnum(buffer[2]),
         content: null,
-        sid: 0
+        sid: null,
+        synSid: null
     }
-    if(struct.packFlags.includes(SocketProviderDeliveryFlags.SID))
+    let offset: number = 3;
+    if(struct.packFlags.includes(SocketProviderPacketFlags.SID))
     {
         const bytes: number[] = [];
-        for(let i = 0; i < SID_SIZE; i++){
-            bytes[i] = buffer[3+i];
+        for(let i = 0; i < SID_SIZE; offset++, i++){
+            bytes[i] = buffer[offset];
         }
         struct.sid = concatOctavesToNumber(bytes);
     }
-    if(struct.packFlags.includes(SocketProviderDeliveryFlags.CNT)){
-        let offset: number =  3 + (struct.packFlags.includes(SocketProviderDeliveryFlags.SID) ? SID_SIZE : 0);
+    if(struct.sysFlags.includes(SocketDeliveryFlags.SYN)){
+        const synSidArray: number[] = [];
+        for(let i = 0; i < SYNSID_SIZE; i++){
+            synSidArray[i] = buffer[offset++];
+        }
+        struct.synSid = concatOctavesToNumber(synSidArray, 2);
+    }
+    if(struct.packFlags.includes(SocketProviderPacketFlags.CNT)){
         struct.content = "";
         struct.contentEncoding = buffer[offset++];
         for(let i = offset; i < buffer.length; i+=2){
@@ -200,24 +218,24 @@ export function shiftBits(bits: boolean[]): number{ // [true, false] -> 1
     return shiftBits(bits);
 }*/
 
-export function sliceNumberToOctaves(num: number): number[]{
+export function sliceNumberToOctaves(num: number, size: number = SID_SIZE): number[]{
     const octaves: number[] = [];
     const unshifted = unshiftBits(num);
     const zeroArray: boolean[] = [];
-    for(let i = 0; i < (8*SID_SIZE)-unshifted.length; i++){
+    for(let i = 0; i < (8*size)-unshifted.length; i++){
         zeroArray[i] = false;
     }
     let shifted = unshifted.concat(zeroArray);
-    for(let i = 0; i < SID_SIZE; i++){
+    for(let i = 0; i < size; i++){
         const slicedBits: boolean[] = shifted.slice(((i*8) | 0), ((i*8) | 0) + 8);
         octaves[i] = shiftBits(slicedBits);
     }
     return octaves;
 }
 
-export function concatOctavesToNumber(nums: number[]): number{
+export function concatOctavesToNumber(nums: number[], size: number = SID_SIZE): number{
     const bits: boolean[] = [];
-    for(let i = 0; i < SID_SIZE; i++){
+    for(let i = 0; i < size; i++){
         const unshifted = unshiftBits(nums[i]);
         for(let ii = 0; ii < 8; ii++){
             bits[((i*8) | 0) + ii] = ii >= unshifted.length ? false : unshifted[ii];
@@ -229,14 +247,15 @@ export function concatOctavesToNumber(nums: number[]): number{
 
 interface IIncomeMessageStructure{
     type: SocketCommunicationMessageType;
-    sysFlags: SocketCommunicationFlags[];
-    packFlags: SocketProviderDeliveryFlags[];
+    sysFlags: SocketDeliveryFlags[];
+    packFlags: SocketProviderPacketFlags[];
     content?: string | Buffer;
     sid?: number;
+    synSid: number;
     contentEncoding?: number;
 }
 
-interface IConvertToBytesContentOptions{
+export interface IConvertToBytesContentOptions{
     content: string | Buffer;
     flags: SocketProviderDeliveryContentEncodingFlags[];
 }

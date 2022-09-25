@@ -6,13 +6,13 @@ export enum SocketCommunicationMessageType{
     RES = 4
 }
 
-export enum SocketCommunicationFlags{
+export enum SocketDeliveryFlags{
     ACK = 1 << 0, // 1
     SYN = 1 << 1, // 2
     FIN = 1 << 2, // 4
 }
 
-export enum SocketProviderDeliveryFlags{
+export enum SocketProviderPacketFlags{
     CNT = 1 << 0,  // 1  Packet has a content
     SID = 1 << 1,  // 2  Packet has a sid
 }

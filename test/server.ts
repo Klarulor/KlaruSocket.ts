@@ -6,7 +6,7 @@
 
 
 import {convertIncomeBuffer, convertToBytes} from "../src/module/features/functions";
-import {SocketCommunicationFlags, SocketCommunicationMessageType} from "../src/module/features/Enums";
+import {SocketDeliveryFlags, SocketCommunicationMessageType} from "../src/module/features/Enums";
 
 /*
 const num = 2048;

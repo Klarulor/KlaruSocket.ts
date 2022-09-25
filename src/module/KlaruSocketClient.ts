@@ -1,8 +1,13 @@
 import {WebSocketConnection} from "./features/Types";
+import {IKlaruSocket} from "./features/interfaces/IKlaruSocket";
+import {createString} from "./features/functions";
+import {SocketSlave} from "./features/SocketSlave";
+import {NetworkPacketManager} from "./features/NetworkPacketManager";
+import {IKlaruSocketInteractable} from "./features/interfaces/IKlaruSocketInteractable";
 
 const WebSocketClient = require('websocket').client;
 
-export class KlaruSocketClient{
+export class KlaruSocketClient implements IKlaruSocket, IKlaruSocketInteractable{
     private readonly _clientTag: string;
     public autoReconnect: boolean = true;
 
@@ -11,6 +16,8 @@ export class KlaruSocketClient{
 
     private readonly _connector = new WebSocketClient();
     private  _connection: WebSocketConnection;
+
+    public readonly network: NetworkPacketManager = new NetworkPacketManager(this);
 
     public get connection(){return this._connection}
 
@@ -30,5 +37,10 @@ export class KlaruSocketClient{
             if(callback) 
                 callback();
         });
+    }
+
+    public readonly uid = createString(32);
+
+    sendBuffer(target: SocketSlave | null, buffer: Buffer): void {
     }
 }
